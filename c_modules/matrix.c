@@ -32,6 +32,7 @@ static PyObject* returnTuple(long int **arr, int *h, int *l) {
             PyTuple_SetItem(V, j, num);
         }
         PyTuple_SetItem(Tuple, i, V);
+        free(arr[i]);
     }
     return Tuple;
     
