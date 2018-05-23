@@ -135,7 +135,7 @@ static PyMethodDef matrixMethods[] =
 };
 
 PyMODINIT_FUNC
-initmatrix2(void)
+initmatrixC(void)
 {
-    (void) Py_InitModule("matrix2", matrixMethods);
+    (void) Py_InitModule("matrixC", matrixMethods);
 }

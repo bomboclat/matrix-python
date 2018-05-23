@@ -1,4 +1,4 @@
-import matrix2
+import matrixC
 import sys
 
 mat1 = (
@@ -13,12 +13,12 @@ mat2 = (
 )
 # matrix2.parse(mat1)
 # matrix2.parse(mat2)
-mat1 = matrix2.generate(10000, 1000)
-mat2 = matrix2.generate(1000, 10000)
+mat1 = matrixC.generate(1000, 1000)
+mat2 = matrixC.generate(1000, 1000)
 # print matrix2.generate(10, 6)
 # matrix2.generate(10, 6)
 # matrix2.generate(6, 6)
-matrix2.calc(mat1, mat2)
+matrixC.calc(mat1, mat2)
 # print matrix2.returnTuple()
 # matrix2.generate(4, 3)
 # ciao = matrix2.returnTuple()
