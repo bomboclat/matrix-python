@@ -12,24 +12,22 @@ static struct matrix {
     int l;
     int h;
 };
-static struct matrix matrix1;
-static struct matrix matrix2;
+
 static struct matrix result;
 
-inline static int fastrand(int g_seed) {
-    g_seed = (214013*g_seed+2531011);
-    return (g_seed>>16)&0x7FFF;
+static int fastrand(int *g_seed) {
+    *g_seed = (214013**g_seed+2531011);
+    return (*g_seed>>16)&0x7FFF;
 }
 
-static PyObject* returnTuple2(long int **arr, int *l, int *h) {
+static PyObject* returnTuple(long int **arr, int *h, int *l) {
 
     PyObject *Tuple;
     Tuple = PyTuple_New(*h);
-
     int i, j;
     for(i=0; i<*h; i++) {
         PyObject *V = PyTuple_New(*l);
-        #pragma omp parallel for
+        //#pragma omp parallel for private (j)
         for(j=0;j<*l;j++) {
             PyTuple_SetItem(V, j, PyInt_FromLong(arr[i][j]));
         }
@@ -40,48 +38,10 @@ static PyObject* returnTuple2(long int **arr, int *l, int *h) {
     //return Py_None;
 }
 
-static PyObject* parse(PyObject* self, PyObject* args) {
+static long int** parse(PyObject* Tup) {
 
-    PyObject* Tup;
-    PyArg_ParseTuple(args, "O!", &PyTuple_Type, &Tup);
     int h = PyTuple_Size(Tup);
     int l = PyTuple_Size(PyTuple_GetItem(Tup, 0));
-
-    long int **arr_ptr;
-    arr_ptr = (long int**)malloc(h * sizeof(long int*));
-
-    int i, j;
-    for(i=0; i<h; i++) {
-        PyObject* TupIn;
-        TupIn = PyTuple_GetItem(Tup, i);
-        arr_ptr[i] = (long int*)malloc(l * sizeof(long int));
-        #pragma omp parallel for
-        for(j=0; j<l; j++) {
-            PyObject* val;
-            val = PyTuple_GetItem(TupIn, j);
-            arr_ptr[i][j] = PyInt_AS_LONG(val);
-        }
-    }
-
-    if (!matrix1.arr) {
-        matrix1.arr = arr_ptr;
-        matrix1.l = l;
-        matrix1.h = h;
-    } else if (!matrix2.arr) {
-        matrix2.arr = arr_ptr;
-        matrix2.l = l;
-        matrix2.h = h;
-    }
-    return Py_None;
-}
-
-static long int** parse2(PyObject* args) {
-
-    PyObject* Tup;
-    PyArg_ParseTuple(args, "O!", &PyTuple_Type, &Tup);
-    int h = PyTuple_Size(Tup);
-    int l = PyTuple_Size(PyTuple_GetItem(Tup, 0));
-
     long int **arr_ptr;
     arr_ptr = (long int**)malloc(h * sizeof(long int*));
 
@@ -110,110 +70,64 @@ static PyObject* generate(PyObject* self, PyObject* args) {
     arr_ptr = (long int**)malloc(h * sizeof(long int*));
 
     int i, j;
+    int myseed;
+    int seed = 123456789;
     for(i=0; i<h; i++) {
         arr_ptr[i] = (long int*)malloc(l * sizeof(long int));
-        #pragma omp parallel for
-        for(j=0; j<l; j++) {
-            arr_ptr[i][j] = fastrand(clock() + __builtin_omp_get_thread_num());
-            printf("%d\n", arr_ptr[i][j]);
+        seed += 100 + clock();
+        # pragma omp parallel private ( j, myseed ) shared(i, l, arr_ptr)
+        {
+            myseed = seed + __builtin_omp_get_thread_num();
+            # pragma omp for
+            for(j=0; j<l; j++) {
+                arr_ptr[i][j] = fastrand(&myseed);
+            }
         }
     }
 
-    //PyObject* Tuple;
-    return returnTuple2(arr_ptr, &h, &l);
-    /*
-    if (!matrix1.arr) {
-        matrix1.arr = arr_ptr;
-        matrix1.l = l;
-        matrix1.h = h;
-    } else if (!matrix2.arr) {
-        matrix2.arr = arr_ptr;
-        matrix2.l = l;
-        matrix2.h = h;
-    }
-    return Py_None;*/
+    return returnTuple(arr_ptr, &h, &l);
+
 }
 
 static PyObject* calc(PyObject* self, PyObject* args) {
-    result.h = matrix1.h;
-    result.l = matrix2.l;
-    if (matrix1.l != matrix2.h) {
+    PyObject* Tup1;
+    PyObject* Tup2;
+    Tup1 = PyTuple_GetItem(args, 0);
+    Tup2 = PyTuple_GetItem(args, 1);
+    int h1 = PyTuple_Size(Tup1);
+    int l1 = PyTuple_Size(PyTuple_GetItem(Tup1, 0));
+    int h2 = PyTuple_Size(Tup2);
+    int l2 = PyTuple_Size(PyTuple_GetItem(Tup2, 0));
+    long int **arr1 = parse(Tup1);
+    long int **arr2 = parse(Tup2);
+
+    result.h = h1;
+    result.l = l2;
+    if (l1 != h2) {
         PyErr_SetString(PyExc_ValueError, "Invalid matrix format!");
         return NULL;
     }
-    result.arr = (long int**)malloc(matrix1.h * sizeof(long int*));
+    result.arr = (long int**)malloc(h1 * sizeof(long int*));
     int i, f, j;
-    for(i=0; i<matrix1.h; i++) {
-        result.arr[i] = (long int*)malloc(matrix2.l * sizeof(long int));
-        for (f=0; f<matrix2.l; f++) {
+    for(i=0; i<h1; i++) {
+        result.arr[i] = (long int*)malloc(l2 * sizeof(long int));
+        for (f=0; f<l2; f++) {
             long int sum = 0;
             #pragma omp parallel for reduction (+: sum)
-            for(j=0; j<matrix1.l; j++) {
-                sum += matrix1.arr[i][j] * matrix2.arr[j][f];
+            for(j=0; j<l1; j++) {
+                sum += arr1[i][j] * arr2[j][f];
             }
             result.arr[i][f] = sum;
         }
     }
-    return Py_None;
-}
-
-static PyObject* calc2(PyObject* self, PyObject* args) {
-    PyObject* Tup;
-    PyArg_ParseTuple(args, "O!", &PyTuple_Type, &Tup);
-    int size = PyTuple_Size(Tup);
-    long int **last_arr;
-    int a, i, f, j;
-
-    for(a=0; a<size; a++){
-        int h = PyTuple_Size(Tup);
-        int l = PyTuple_Size(PyTuple_GetItem(Tup, 0));
-        if (matrix1.l != matrix2.h) {
-            PyErr_SetString(PyExc_ValueError, "Invalid matrix format!");
-            return NULL;
-        }
-        result.arr = (long int**)malloc(matrix1.h * sizeof(long int*));
-
-        for(i=0; i<matrix1.h; i++) {
-            result.arr[i] = (long int*)malloc(matrix2.l * sizeof(long int));
-            for (f=0; f<matrix2.l; f++) {
-                long int sum = 0;
-                #pragma omp parallel for reduction (+: sum)
-                for(j=0; j<matrix1.l; j++) {
-                    sum += matrix1.arr[i][j] * matrix2.arr[j][f];
-                }
-                result.arr[i][f] = sum;
-            }
-        }
-    }
-    return Py_None;
-}
-
-static PyObject* returnTuple(PyObject* self) {
-
-    PyObject *Tuple;
-    Tuple = PyTuple_New(result.h);
-
-    int i, j;
-    for(i=0; i<result.h; i++) {
-        PyObject *V = PyTuple_New(result.l);
-        #pragma omp parallel for
-        for(j=0;j<result.l;j++) {
-            PyTuple_SetItem(V, j, PyInt_FromLong(result.arr[i][j]));
-        }
-        PyTuple_SetItem(Tuple, i, V);
-    }
-    return Tuple;
-    
-    //return Py_None;
+    return returnTuple(result.arr, &result.h, &result.l);  
 }
 
 
 static PyMethodDef matrixMethods[] =
 {
-    {"parse", parse, METH_VARARGS, "Python C module"},
     {"generate", generate, METH_VARARGS, "Python C module"},
     {"calc", calc, METH_VARARGS, "Python C module"},
-    {"returnTuple", returnTuple, METH_NOARGS, "Python C module"},
     {NULL, NULL, 0, NULL}
 };
 
