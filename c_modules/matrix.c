@@ -7,13 +7,11 @@
 //#include "vector.c"
 //#include "random.c"
 
-static struct matrix {
+typedef struct matrix {
     long int **arr;
     int l;
     int h;
 };
-
-static struct matrix result;
 
 static int fastrand(int *g_seed) {
     *g_seed = (214013**g_seed+2531011);
@@ -29,7 +27,9 @@ static PyObject* returnTuple(long int **arr, int *h, int *l) {
         PyObject *V = PyTuple_New(*l);
         //#pragma omp parallel for private (j)
         for(j=0;j<*l;j++) {
-            PyTuple_SetItem(V, j, PyInt_FromLong(arr[i][j]));
+            PyObject* num;
+            num = PyInt_FromLong(arr[i][j]);
+            PyTuple_SetItem(V, j, num);
         }
         PyTuple_SetItem(Tuple, i, V);
     }
@@ -90,32 +90,35 @@ static PyObject* generate(PyObject* self, PyObject* args) {
 }
 
 static PyObject* calc(PyObject* self, PyObject* args) {
+    static struct matrix result;
+    static struct matrix mat1;
+    static struct matrix mat2;
     PyObject* Tup1;
     PyObject* Tup2;
     Tup1 = PyTuple_GetItem(args, 0);
     Tup2 = PyTuple_GetItem(args, 1);
-    int h1 = PyTuple_Size(Tup1);
-    int l1 = PyTuple_Size(PyTuple_GetItem(Tup1, 0));
-    int h2 = PyTuple_Size(Tup2);
-    int l2 = PyTuple_Size(PyTuple_GetItem(Tup2, 0));
-    long int **arr1 = parse(Tup1);
-    long int **arr2 = parse(Tup2);
+    mat1.h = PyTuple_Size(Tup1);
+    mat1.l = PyTuple_Size(PyTuple_GetItem(Tup1, 0));
+    mat2.h = PyTuple_Size(Tup2);
+    mat2.l = PyTuple_Size(PyTuple_GetItem(Tup2, 0));
+    mat1.arr = parse(Tup1);
+    mat2.arr = parse(Tup2);
 
-    result.h = h1;
-    result.l = l2;
-    if (l1 != h2) {
+    result.h = mat1.h;
+    result.l = mat2.l;
+    if (mat1.l != mat2.h) {
         PyErr_SetString(PyExc_ValueError, "Invalid matrix format!");
         return NULL;
     }
-    result.arr = (long int**)malloc(h1 * sizeof(long int*));
+    result.arr = (long int**)malloc(mat1.h * sizeof(long int*));
     int i, f, j;
-    for(i=0; i<h1; i++) {
-        result.arr[i] = (long int*)malloc(l2 * sizeof(long int));
-        for (f=0; f<l2; f++) {
+    for(i=0; i<mat1.h; i++) {
+        result.arr[i] = (long int*)malloc(mat2.l * sizeof(long int));
+        for (f=0; f<mat2.l; f++) {
             long int sum = 0;
             #pragma omp parallel for reduction (+: sum)
-            for(j=0; j<l1; j++) {
-                sum += arr1[i][j] * arr2[j][f];
+            for(j=0; j<mat1.l; j++) {
+                sum += mat1.arr[i][j] * mat2.arr[j][f];
             }
             result.arr[i][f] = sum;
         }
