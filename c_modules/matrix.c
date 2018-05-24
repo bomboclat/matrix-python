@@ -4,8 +4,6 @@
 #include <math.h>
 #include <malloc.h>
 #include <emmintrin.h>
-//#include "vector.c"
-//#include "random.c"
 
 typedef struct matrix {
     long int **arr;
@@ -35,8 +33,6 @@ static PyObject* returnTuple(long int **arr, int *h, int *l) {
         free(arr[i]);
     }
     return Tuple;
-    
-    //return Py_None;
 }
 
 static long int** parse(PyObject* Tup) {
@@ -72,7 +68,7 @@ static PyObject* generate(PyObject* self, PyObject* args) {
 
     int i, j;
     int myseed;
-    int seed = 123456789;
+    int seed = 123456;
     for(i=0; i<h; i++) {
         arr_ptr[i] = (long int*)malloc(l * sizeof(long int));
         seed += 100 + clock();
@@ -87,10 +83,9 @@ static PyObject* generate(PyObject* self, PyObject* args) {
     }
 
     return returnTuple(arr_ptr, &h, &l);
-
 }
 
-static PyObject* calc(PyObject* self, PyObject* args) {
+static PyObject* cross(PyObject* self, PyObject* args) {
     static struct matrix result;
     static struct matrix mat1;
     static struct matrix mat2;
@@ -131,7 +126,7 @@ static PyObject* calc(PyObject* self, PyObject* args) {
 static PyMethodDef matrixMethods[] =
 {
     {"generate", generate, METH_VARARGS, "Python C module"},
-    {"calc", calc, METH_VARARGS, "Python C module"},
+    {"cross", cross, METH_VARARGS, "Python C module"},
     {NULL, NULL, 0, NULL}
 };
 
