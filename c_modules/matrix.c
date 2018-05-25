@@ -85,10 +85,10 @@ static PyObject* generate(PyObject* self, PyObject* args) {
     return returnTuple(arr_ptr, &h, &l);
 }
 
-static PyObject* cross(PyObject* self, PyObject* args) {
+static PyObject* matmul(PyObject* self, PyObject* args) {
     int arg_num = PyTuple_Size(args);
     if (arg_num < 2) {
-        PyErr_SetString(PyExc_ValueError, "Cross function need 2 or more arguments!");
+        PyErr_SetString(PyExc_ValueError, "matmul function need 2 or more arguments!");
         return NULL;
     }
     static struct matrix result;
@@ -131,7 +131,7 @@ static PyObject* cross(PyObject* self, PyObject* args) {
 static PyMethodDef matrixMethods[] =
 {
     {"generate", generate, METH_VARARGS, "Python C module"},
-    {"cross", cross, METH_VARARGS, "Python C module"},
+    {"matmul", matmul, METH_VARARGS, "Python C module"},
     {NULL, NULL, 0, NULL}
 };
 

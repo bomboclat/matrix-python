@@ -30,7 +30,7 @@ print "matrix 2 generated in: " + str(elapsed_time) + " sec"
 print "\nstart calculating"
 start_time = time.time()
 
-matrixC.cross(mat1, mat2)
+matrixC.matmul(mat1, mat2)
 
 elapsed_time = time.time() - start_time
 print "calculated in: " + str(elapsed_time) + " sec"
