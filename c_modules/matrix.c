@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <emmintrin.h>
 
-typedef struct matrix {
+static struct matrix {
     long int **arr;
     int l;
     int h;
@@ -86,6 +86,11 @@ static PyObject* generate(PyObject* self, PyObject* args) {
 }
 
 static PyObject* cross(PyObject* self, PyObject* args) {
+    int arg_num = PyTuple_Size(args);
+    if (arg_num < 2) {
+        PyErr_SetString(PyExc_ValueError, "Cross function need 2 or more arguments!");
+        return NULL;
+    }
     static struct matrix result;
     static struct matrix mat1;
     static struct matrix mat2;
