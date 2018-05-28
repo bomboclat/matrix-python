@@ -1,6 +1,6 @@
 # matrix-python
 Python plugin written in C for **matrix multiplication** and randomic generation.
-It use **OpenMP** to parallelize the multiplication
+It use **OpenMP** to parallelize the multiplication.
 
 Installation
 ------------
