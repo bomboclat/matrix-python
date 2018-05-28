@@ -23,6 +23,7 @@ import matrixC
 mat1 = matrixC.generate(50, 100)
 mat2 = matrixC.generate(100, 20)
 ```
+> The returned type is a tuple
 
 To multiply them:
 ```python
